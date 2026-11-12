@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mini Redis</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="app-header">
+    <a class="brand" href="/">Mini Redis</a>
+    <div class="connection">
+      <span id="connection-dot" class="dot" aria-hidden="true"></span>
+      <span id="connection-text">연결 확인 중</span>
+      <button id="refresh" class="button secondary" aria-label="연결 상태 새로고침">새로고침</button>
+    </div>
+  </header>
+  <nav class="tabs" aria-label="작업 공간">
+    <button class="nav-item active" data-tab="store" aria-current="page">키 저장소</button>
+    <button class="nav-item" data-tab="cache">캐시 실험</button>
+  </nav>
+  <main>
+    <section id="store-view" class="view">
+      <div class="page-heading">
+        <div class="heading-group"><h1>키 저장소</h1><span class="key-summary">저장된 키 <strong id="key-count">—</strong></span></div>
+        <button id="snapshot" class="button secondary">스냅샷 저장</button>
+      </div>
+      <div class="workspace">
+        <section class="editor" aria-labelledby="editor-title">
+          <h2 id="editor-title">입력</h2>
+          <form id="key-form">
+            <label for="key">키</label>
+            <input id="key" name="key" value="hello:world" placeholder="예: user:1" autocomplete="off" maxlength="4096">
+            <label for="value">값</label>
+            <textarea id="value" name="value" rows="6" spellcheck="false">{
+  "message": "안녕하세요, Mini Redis!",
+  "ready": true
+}</textarea>
+            <label for="ttl">만료 시간 <span class="optional">선택</span></label>
+            <div class="ttl-row">
+              <div class="unit-input"><input id="ttl" type="number" min="1" max="2147483647" step="1" placeholder="없음" aria-label="만료 시간 초" aria-describedby="ttl-help"><span>초</span></div>
+              <span id="ttl-help" class="field-help">비워 두면 무기한</span>
+            </div>
+            <div class="actions">
+              <button class="button primary" type="submit">저장</button>
+              <button class="button secondary" id="get-key" type="button">조회</button>
+              <button class="button secondary" id="delete-key" type="button">삭제</button>
+            </div>
+          </form>
+        </section>
+        <section class="inspector" aria-labelledby="result-title">
+          <div class="section-title"><h2 id="result-title">결과</h2><span id="result-time"></span></div>
+          <div class="result-meta"><span id="result-command">대기 중</span><span id="result-type"></span></div>
+          <div id="result-wrap" class="result-wrap"><pre id="result" aria-live="polite">실행 결과가 여기에 표시됩니다.</pre></div>
+          <p id="result-detail" class="result-detail"></p>
+        </section>
+      </div>
+      <section class="history" aria-labelledby="history-title">
+        <div class="section-title"><h2 id="history-title">최근 작업 <span id="history-count">0</span></h2></div>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="최근 작업 20개">
+          <table><thead><tr><th scope="col">시간</th><th scope="col">명령</th><th scope="col">키</th><th scope="col">결과</th><th scope="col">소요 시간</th></tr></thead><tbody id="history-body"><tr class="empty-row"><td colspan="5">기록 없음</td></tr></tbody></table>
+        </div>
+      </section>
+    </section>
+    <section id="cache-view" class="view" hidden>
+      <div class="page-heading"><h1>캐시 실험</h1></div>
+      <div class="metrics" aria-label="캐시 통계">
+        <div><span>원본 조회</span><strong id="origin-count">0</strong></div>
+        <div><span>히트</span><strong id="hit-count">0</strong></div>
+        <div><span>미스</span><strong id="miss-count">0</strong></div>
+        <div><span title="히트 / (히트 + 미스)">히트율</span><strong id="hit-rate">—</strong></div>
+      </div>
+      <div class="workspace">
+        <section class="editor" aria-labelledby="product-title">
+          <h2 id="product-title">상품 조회</h2>
+          <label for="product-id">상품</label>
+          <select id="product-id"><option value="1">상품 1</option><option value="2">상품 2</option><option value="3">상품 3</option></select>
+          <div class="actions"><button id="cached-get" class="button primary">캐시 조회</button><button id="uncached-get" class="button secondary">원본 조회</button></div>
+          <form id="product-form" class="product-form">
+            <h2>상품 수정</h2>
+            <label for="product-name">이름</label><input id="product-name" value="Updated product" required maxlength="200">
+            <label for="product-price">가격</label><div class="unit-input full"><input id="product-price" type="number" value="1500" min="0" max="1000000000000" step="any" required><span>원</span></div>
+            <button class="button secondary" type="submit">수정 · 캐시 무효화</button>
+          </form>
+        </section>
+        <section class="inspector" aria-labelledby="cache-result-title">
+          <div class="section-title"><h2 id="cache-result-title">응답</h2><span id="cache-time"></span></div>
+          <div class="result-meta"><span id="cache-path">대기 중</span><span id="cache-state"></span></div>
+          <div class="result-wrap"><pre id="cache-result" aria-live="polite">상품을 조회하세요.</pre></div>
+          <p id="cache-detail" class="result-detail"></p>
+        </section>
+      </div>
+      <p class="experiment-note">예제 데이터 사용 · 기본 원본 지연 50ms · 기본 TTL 5초</p>
+    </section>
+  </main>
+  <div id="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

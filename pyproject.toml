@@ -1,0 +1,6 @@
+[project]
+name = "jungle-mini-redis"
+version = "0.1.0"
+description = "A custom hash table, RESP server, TTL, snapshots, and cache demo"
+requires-python = ">=3.10"
+dependencies = []
