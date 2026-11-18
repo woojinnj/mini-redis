@@ -79,18 +79,17 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A["현재 · CLI / Python / GUI"] --> B["TCP/RESP2 서버"]
-    C["팀원 · Python 클라이언트"] --> D["TCP/RESP2 서버"]
-    E["양쪽 HTTP 예제 API"] --> F["Mini Redis를 캐시로 사용"]
+    A["현재 · 상품 HTTP API"] --> B["Python 클라이언트<br/>명령마다 연결"] --> C["Mini Redis 서버<br/>TCP/RESP2"]
+    D["팀원 · 사용자 HTTP API"] --> E["Python 연결 풀<br/>기존 연결 재사용"] --> F["Mini Redis 서버<br/>TCP/RESP2"]
 ```
 
 | 비교 | 현재 구현 · Python | 팀원 구현 · C |
 |---|---|---|
 | **처리 방식** | TCP/RESP2 + HTTP 명령·상품 API | TCP/RESP2 + HTTP 사용자 조회 API |
-| **장점** | CLI·GUI로 호출과 결과 확인이 쉬움 | NX/XX 등 명령 범위가 넓음; 데모의 연결 풀로 재사용 |
+| **장점** | HTTP로 상품을 조회·수정하고 Redis 명령도 호출 가능 | 조건부 저장(`NX`·`XX`) 지원, 연결 재사용 |
 | **비용·한계** | Python 클라이언트가 명령마다 새 연결 | 풀의 연결 반환·오류 처리 관리 필요 |
 
-> **비교 핵심: 현재는 사용·시연 경로, 팀원은 명령 범위·연결 재사용에 강점.**
+> **비교 핵심: 두 HTTP API 모두 조회 결과를 캐시하며, Redis 연결을 관리하는 방식이 다르다.**
 > 양쪽 모두 외부 호출 구조를 갖췄으며, 전체 Redis 호환이나 성능 우열을 보장하는 비교는 아닙니다.
 
 <a id="invalidation"></a>
@@ -151,17 +150,25 @@ flowchart LR
 |---|---|
 | ① 동시성 | 둘 다 명령 단위로 보호. 구조만으로 우열을 단정하지 않음 |
 | ② 만료 처리 | 같은 전략. 실행 위치와 정리 비용의 차이 |
-| ③ 외부 API | 현재의 CLI·GUI와 HTTP API는 사용 흐름을 확인하기 쉬움 |
+| ③ 외부 API | 두 구현 모두 HTTP 조회 결과를 캐시. 현재 상품 API는 원본 수정도 지원 |
 | ④ 무효화 | **상품별 락 + 버전 키로 조회·수정 경합까지 대응한 점이 주요 선택 이유** |
 | ⑤ 데이터 보존 | 팀원의 연속 기록 장점을 인정. 현재의 저장 이후 유실 가능성은 개선 과제 |
 
-**GUI에서 보는 흐름**　가격 수정 → 첫 캐시 조회에서 새 가격을 읽어 저장(`MISS`) → 만료 전 재조회에서 같은 가격을 반환(`HIT`)
+**상품 API의 캐시 흐름**　가격 수정 → 첫 조회에서 새 가격을 읽어 저장(`MISS`) → 만료 전 재조회에서 캐시된 가격을 반환(`HIT`)
 
 <details>
 <summary>실행 방법 · 비교 근거 · 관련 문서</summary>
 
-Python 3.10 이상, 프로젝트 루트에서 `python3 -m mini_redis.gui` 실행 후
-[http://127.0.0.1:8080](http://127.0.0.1:8080)을 엽니다. 기본 스냅샷은 `data/snapshot.json`입니다.
+Python 3.10 이상에서 프로젝트 루트의 터미널 두 개로 서버를 실행합니다.
+
+```sh
+# 터미널 1 · Mini Redis
+python3 -m mini_redis.server --snapshot data/snapshot.json
+# 터미널 2 · 상품 HTTP API
+python3 -m mini_redis.demo
+```
+
+다른 터미널에서 `curl -i http://127.0.0.1:8080/products/1`을 호출하면 상품 정보와 `X-Cache` 응답 헤더를 확인할 수 있습니다.
 
 - [발표 대본](docs/PRESENTATION.md) · [실행·구현 상세](docs/REFERENCE.md)
 - 현재 구현: [서버](mini_redis/server.py) · [저장소](mini_redis/store.py) · [클라이언트](mini_redis/client.py) · [상품 API](mini_redis/demo.py)
