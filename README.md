@@ -80,13 +80,13 @@ flowchart LR
 ```mermaid
 flowchart LR
     A["현재 · CLI / Python / GUI"] --> B["TCP/RESP2 서버"]
-    C["팀원 · Python 클라이언트"] --> D["TCP/RESP 서버"]
+    C["팀원 · Python 클라이언트"] --> D["TCP/RESP2 서버"]
     E["양쪽 HTTP 예제 API"] --> F["Mini Redis를 캐시로 사용"]
 ```
 
 | 비교 | 현재 구현 · Python | 팀원 구현 · C |
 |---|---|---|
-| **처리 방식** | TCP/RESP2 + HTTP 명령·상품 API | TCP/RESP + HTTP 사용자 조회 API |
+| **처리 방식** | TCP/RESP2 + HTTP 명령·상품 API | TCP/RESP2 + HTTP 사용자 조회 API |
 | **장점** | CLI·GUI로 호출과 결과 확인이 쉬움 | NX/XX 등 명령 범위가 넓음; 데모의 연결 풀로 재사용 |
 | **비용·한계** | Python 클라이언트가 명령마다 새 연결 | 풀의 연결 반환·오류 처리 관리 필요 |
 
