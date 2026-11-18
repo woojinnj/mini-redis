@@ -19,15 +19,6 @@ Mini Redis는 여러 클라이언트가 키와 값을 읽고 쓰는 메모리 �
 | **현재 코드** · 연결별 스레드 | 저장소 락(`RLock`) 밖에서는 각 스레드가 자기 연결의 입력을 읽고 응답을 보낼 수 있음 | 요청을 보내지 않고 연결만 유지하는 클라이언트에도 스레드 하나가 필요 |
 | **비교 코드** · 단일 이벤트 루프 | 한 스레드가 준비된 연결을 골라 처리하므로 연결별 스레드와 저장소 락이 필요 없음 | 긴 명령을 실행하는 동안에는 루프가 다른 연결에서 이미 도착한 요청을 읽는 일도 미뤄짐 |
 
-**같은 키에 두 번 증가를 요청한 예** · 처음 값은 0
-
-| 요청 방법 | 실행 순서의 예 | 최종값 |
-|---|---|---|
-| A와 B가 각각 `INCR` 한 번 | A가 0 → 1 저장, 이어서 B가 1 → 2 저장 | **2** |
-| A와 B가 각각 `GET` → 계산 → `SET` | 둘 다 0을 읽은 뒤 각각 1을 저장 | **1이 될 수 있음** |
-
-캐시를 읽고 다시 채우는 과정도 여러 명령에 걸칩니다.
-
 <a id="invalidation"></a>
 
 ## 2. 무효화 · 다음 조회에서 예전 값을 쓰지 않는 방법
@@ -54,7 +45,7 @@ Mini Redis는 여러 클라이언트가 키와 값을 읽고 쓰는 메모리 �
 
 ## 3. 현재 코드를 선택한 이유
 
-**동시 증가의 결과는 두 코드 모두 2입니다. 선택을 가른 건 가격 수정 직후의 첫 조회였습니다.**
+**선택을 가른 건 가격 수정 직후의 첫 조회였습니다.**
 
 | 선택 기준 | 팀의 판단 |
 |---|---|
@@ -64,7 +55,7 @@ Mini Redis는 여러 클라이언트가 키와 값을 읽고 쓰는 메모리 �
 <details>
 <summary>비교한 코드와 관련 문서</summary>
 
-- 현재 코드의 [연결 처리](mini_redis/server.py), [저장소 락과 INCR](mini_redis/store.py), [상품 조회와 수정](mini_redis/demo.py)
+- 현재 코드의 [연결 처리](mini_redis/server.py), [저장소 락](mini_redis/store.py), [상품 조회와 수정](mini_redis/demo.py)
 - 비교 코드의 [이벤트 루프](https://github.com/minseongkim275-dotcom/mini-redis/blob/bfb1c0566b00e2b30a03cb5b4c0845e357f0a0e0/src/net/server.c), [명령 처리](https://github.com/minseongkim275-dotcom/mini-redis/blob/bfb1c0566b00e2b30a03cb5b4c0845e357f0a0e0/src/commands/commands.c), [사용자 조회와 캐시 삭제](https://github.com/minseongkim275-dotcom/mini-redis/blob/bfb1c0566b00e2b30a03cb5b4c0845e357f0a0e0/demo/api_server.py)
 - [Ver2 발표 대본](docs/PRESENTATION_VER2.md) · [다섯 기준 전체 비교](README.md)
 
